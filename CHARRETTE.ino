@@ -1,25 +1,52 @@
-#define LEFTMOTOR 13
+#define LEFTMOTOR 11
 #define RIGHTMOTOR 10
-#define TRIG 5
-#define ECHO 4
-#define TRIG2 7
-#define ECHO2 6
+#define SERVOMOTOR 9
+
+#define TRIG 4
+#define ECHO 5
+#define TRIG2 2
+#define ECHO2 3
+
+#define LED 6
+#define LEFT_BUTTON 12
+#define CENTER_BUTTON 7
+#define RIGHT_BUTTON 8
+#define UP_BUTTON 13
 
 const float margin = 2.8f;
+
+bool launched = false;
+
+bool ledState = false;
 
 void setup() {
 
   pinMode(LEFTMOTOR, OUTPUT);
   pinMode(RIGHTMOTOR, OUTPUT);
+  pinMode(SERVOMOTOR, OUTPUT);
+
   pinMode(TRIG, OUTPUT);
   pinMode(ECHO, INPUT);
   pinMode(TRIG2, OUTPUT);
   pinMode(ECHO2, INPUT);
 
+  pinMode(LED, OUTPUT);
+  
+  pinMode(LEFT_BUTTON, INPUT);
+  pinMode(CENTER_BUTTON, INPUT);
+  pinMode(RIGHT_BUTTON, INPUT);
+  pinMode(UP_BUTTON, INPUT);
+
   Serial.begin(9600);
 }
 
 void loop() {
+
+  // Wait for button to start
+  while(!(digitalRead(CENTER_BUTTON) || launched));
+  Serial.println("Starting");
+  launched = true;
+
   //calibrate();
   //goForwardXMillis(100);
   //goStraight();
@@ -38,8 +65,14 @@ void loop() {
     distanceLeft = getDistance();
     distanceRight = getDistance2();
     printDistances();
-    delay(300);
+
+    toggle_led();
   }
+}
+
+void toggle_led() {
+  ledState = !ledState;
+  digitalWrite(LED, ledState);
 }
 
 float getDistance()
