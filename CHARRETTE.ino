@@ -1,260 +1,142 @@
-#define LEFTMOTOR 11
+#define LEFTMOTOR 9
 #define RIGHTMOTOR 10
-#define SERVOMOTOR 9
+#define TRIG 5
+#define ECHO 4
+#define TRIG2 7
+#define ECHO2 6
 
-#define TRIG 4
-#define ECHO 5
-#define TRIG2 2
-#define ECHO2 3
+#define nMesureDistance 1
 
-#define LED 6
-#define LEFT_BUTTON 12
-#define CENTER_BUTTON 7
-#define RIGHT_BUTTON 8
-#define UP_BUTTON 13
+#include <Servo.h>
 
-const float margin = 2.8f;
+Servo motorL;
+Servo motorR;
 
-bool launched = false;
-
-bool ledState = false;
+const float margin = 2.0f;
 
 void setup() {
 
   pinMode(LEFTMOTOR, OUTPUT);
   pinMode(RIGHTMOTOR, OUTPUT);
-  pinMode(SERVOMOTOR, OUTPUT);
-
   pinMode(TRIG, OUTPUT);
   pinMode(ECHO, INPUT);
   pinMode(TRIG2, OUTPUT);
   pinMode(ECHO2, INPUT);
 
-  pinMode(LED, OUTPUT);
-  
-  pinMode(LEFT_BUTTON, INPUT);
-  pinMode(CENTER_BUTTON, INPUT);
-  pinMode(RIGHT_BUTTON, INPUT);
-  pinMode(UP_BUTTON, INPUT);
+  motorL.attach(LEFTMOTOR);
+  motorR.attach(RIGHTMOTOR);
 
   Serial.begin(9600);
 }
 
-void loop() {
 
-  // Wait for button to start
-  while(!(digitalRead(CENTER_BUTTON) || launched));
-  Serial.println("Starting");
-  launched = true;
-
-  //calibrate();
-  //goForwardXMillis(100);
-  //goStraight();
-
-  float distanceLeft = getDistance();
-  float distanceRight = getDistance2();
-
-  while(true)
-  {
-    if(distanceLeft - margin > distanceRight) slightLeft();
-    else if(distanceRight - margin > distanceLeft) slightRight();
-    else
-    {
-      goForwardXMillis(5000);
-    }
-    distanceLeft = getDistance();
-    distanceRight = getDistance2();
-    printDistances();
-
-    toggle_led();
-  }
-}
-
-void toggle_led() {
-  ledState = !ledState;
-  digitalWrite(LED, ledState);
-}
 
 float getDistance()
 {
-  digitalWrite(TRIG, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TRIG, LOW);
+  float result = 0;
 
-  return 0.017 * pulseIn(ECHO, HIGH);  
+  for(int i = 0; i < nMesureDistance; i++)
+  {
+    digitalWrite(TRIG, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(TRIG, LOW);
+
+    result += 0.017 * pulseIn(ECHO, HIGH);
+
+    delayMicroseconds(1000);
+  }
+
+  return result/nMesureDistance;
+
 }
 
 float getDistance2()
 {
-  digitalWrite(TRIG2, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TRIG2, LOW);
+  float result = 0;
 
-  return 0.017 * pulseIn(ECHO2, HIGH);  
+  for(int i = 0; i < nMesureDistance; i++)
+  {
+    digitalWrite(TRIG2, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(TRIG2, LOW);
+
+    result += 0.017 * pulseIn(ECHO2, HIGH);
+
+    delayMicroseconds(1000);
+  }
+
+  return result/nMesureDistance;
 }
 
 void printDistances()
 {
   Serial.println("Distance 1 : ");
   Serial.println(getDistance());
-  delay(10);
   Serial.println("Distance 2 : ");
   Serial.println(getDistance2());
 }
 
 void calibrate()
 {
+  motorR.write(90);
+  motorL.write(90);
   while(true)
   {
-    digitalWrite(LEFTMOTOR, HIGH);
-    digitalWrite(RIGHTMOTOR, HIGH);
-    delayMicroseconds(1500);
-    digitalWrite(LEFTMOTOR, LOW);
-    digitalWrite(RIGHTMOTOR, LOW);
-    delayMicroseconds(20000);
+    delay(100);
   }
 }
 
 void goForwardXMillis(int interval)
 {
   Serial.println("Going forward!");
-  unsigned long time = micros();
+  motorL.write(180);
+  motorR.write(0);
 
-  unsigned long leftTime = time;
-  unsigned long rightTime = time;
+  delay(200);
 
-  digitalWrite(LEFTMOTOR, HIGH);
-  digitalWrite(RIGHTMOTOR, HIGH);
+  motorL.write(90);
+  motorR.write(90);
 
-  bool leftPulsed = true;
-  bool rightPulsed = true;
-
-  while(time + interval*1000 > micros())
-  {
-    unsigned long realTime = micros();
-
-    if(leftTime + 1300 < realTime && leftPulsed)
-    {
-      leftTime = realTime;
-      digitalWrite(LEFTMOTOR, LOW);
-      leftPulsed = false;
-    }
-    else if(leftTime + 20000 < realTime && !leftPulsed)
-    {
-      leftTime = realTime;
-      digitalWrite(LEFTMOTOR, HIGH);
-      leftPulsed = true;
-    }
-
-    if(rightTime + 1700 < realTime && rightPulsed)
-    {
-      rightTime = realTime;
-      digitalWrite(RIGHTMOTOR, LOW);
-      rightPulsed = false;
-    }
-    else if(rightTime + 20000 < realTime && !rightPulsed)
-    {
-      rightTime = realTime;
-      digitalWrite(RIGHTMOTOR, HIGH);
-      rightPulsed = true;
-    }
-  }
 }
 
-void slightLeft()
+void slightLeft(float error)
 {
-  Serial.println("I want to go left");
-  unsigned long time = micros();
+  Serial.print("I want ot go left with error ");
+  Serial.println(error);
+  
+  motorL.write(100 - error);
+  motorR.write(0);
 
-  unsigned long leftTime = time;
-  unsigned long rightTime = time;
+  delay(200);
 
-  digitalWrite(LEFTMOTOR, HIGH);
-  digitalWrite(RIGHTMOTOR, HIGH);
+  motorL.write(90);
+  motorR.write(90);
 
-  bool leftPulsed = true;
-  bool rightPulsed = true;
-
-  while(time + 400000 > micros())
-  {
-    unsigned long realTime = micros();
-
-/*
-    if(leftTime + 1300 < realTime && leftPulsed)
-    {
-      leftTime = realTime;
-      digitalWrite(LEFTMOTOR, LOW);
-      leftPulsed = false;
-    }
-    else if(leftTime + 20000 < realTime && !leftPulsed)
-    {
-      leftTime = realTime;
-      digitalWrite(LEFTMOTOR, HIGH);
-      leftPulsed = true;
-    }
-*/
-    if(rightTime + 1700 < realTime && rightPulsed)
-    {
-      rightTime = realTime;
-      digitalWrite(RIGHTMOTOR, LOW);
-      rightPulsed = false;
-    }
-    else if(rightTime + 20000 < realTime && !rightPulsed)
-    {
-      rightTime = realTime;
-      digitalWrite(RIGHTMOTOR, HIGH);
-      rightPulsed = true;
-    }
-  }
 }
 
-void slightRight()
+void slightRight(float error)
 {
   Serial.println("I want ot go right");
-  unsigned long time = micros();
+  
+  motorL.write(180);
+  motorR.write(80 + error);
 
-  unsigned long leftTime = time;
-  unsigned long rightTime = time;
+  delay(200);
 
-  digitalWrite(LEFTMOTOR, HIGH);
-  digitalWrite(RIGHTMOTOR, HIGH);
+  motorL.write(90);
+  motorR.write(90);
 
-  bool leftPulsed = true;
-  bool rightPulsed = true;
+}
 
-  while(time + 400000 > micros())
+void turnLeftandRight()
+{
+  for(int i = 0; i < 180; i++)
   {
-    unsigned long realTime = micros();
-
-
-    if(leftTime + 1300 < realTime && leftPulsed)
-    {
-      leftTime = realTime;
-      digitalWrite(LEFTMOTOR, LOW);
-      leftPulsed = false;
-    }
-    else if(leftTime + 20000 < realTime && !leftPulsed)
-    {
-      leftTime = realTime;
-      digitalWrite(LEFTMOTOR, HIGH);
-      leftPulsed = true;
-    }
-/*
-    if(rightTime + 1700 < realTime && rightPulsed)
-    {
-      rightTime = realTime;
-      digitalWrite(RIGHTMOTOR, LOW);
-      rightPulsed = false;
-    }
-    else if(rightTime + 20000 < realTime && !rightPulsed)
-    {
-      rightTime = realTime;
-      digitalWrite(RIGHTMOTOR, HIGH);
-      rightPulsed = true;
-    }
-*/
+    Serial.println(i);
+    motorL.write(i);
+    motorR.write(180-i);
+    delay(100);
   }
-
 }
 
 void goStraight()
@@ -264,14 +146,19 @@ void goStraight()
 
   while(true)
   {
-    if(distanceLeft - margin > distanceRight) slightLeft();
-    else if(distanceRight - margin > distanceLeft) slightRight();
+    distanceLeft = getDistance();
+    distanceRight = getDistance2();
+
+    if(distanceLeft - margin > distanceRight) slightLeft(distanceLeft - margin - distanceRight);
+    else if(distanceRight - margin > distanceLeft) slightRight(distanceRight - margin - distanceLeft);
     else
     {
       goForwardXMillis(100);
     }
-    distanceLeft = getDistance();
-    distanceRight = getDistance2();
     printDistances();
   }
+}
+
+void loop() {
+  goStraight();
 }
