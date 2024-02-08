@@ -13,6 +13,8 @@ void setup() {
   pinMode(RIGHTMOTOR, OUTPUT);
   pinMode(TRIG, OUTPUT);
   pinMode(ECHO, INPUT);
+  pinMode(TRIG2, OUTPUT);
+  pinMode(ECHO2, INPUT);
 
   Serial.begin(9600);
 }
@@ -128,7 +130,7 @@ void goForwardXMillis(int interval)
 
 void slightLeft()
 {
-  Serial.println("I want ot go left");
+  Serial.println("I want to go left");
   unsigned long time = micros();
 
   unsigned long leftTime = time;
