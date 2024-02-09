@@ -14,12 +14,19 @@
 #define UP_BUTTON 13
 #define nMesureDistance 1
 
+#define leftPosition 180
+#define frontPosition 90
+
 #include <Servo.h>
 
 Servo motorL;
 Servo motorR;
+Servo servoMotor;
 
 const float margin = 1.0f;
+const int slowCorrector = 2;
+const int normalCorrector = 10;
+const int fastCorrector = 90;
 
 long distanceReadUpdate;
 long ledupdate;
@@ -47,7 +54,9 @@ void setup() {
 
   motorL.attach(LEFTMOTOR);
   motorR.attach(RIGHTMOTOR);
+  servoMotor.attach(SERVOMOTOR);
 
+  servoMotor.write(leftPosition);
   motorR.write(90);
   motorL.write(90);
   digitalWrite(LED, LOW);
@@ -64,8 +73,8 @@ void setup() {
 }
 
 
-
-float getDistance()
+//Distance to the right
+float getDistanceD()
 {
   float result = 0;
 
@@ -84,7 +93,8 @@ float getDistance()
 
 }
 
-float getDistance2()
+//distance to the left
+float getDistanceG()
 {
   float result = 0;
 
@@ -102,20 +112,20 @@ float getDistance2()
   return result/nMesureDistance;
 }
 
-void printDistances(float distance1, float distance2)
+void printDistances(float distanceD, float distanceG)
 {
-  Serial.println("Distance 1 : ");
-  Serial.println(distance1);
-  Serial.println("Distance 2 : ");
-  Serial.println(distance2);
+  Serial.println("Distance D : ");
+  Serial.println(distanceD);
+  Serial.println("Distance G : ");
+  Serial.println(distanceG);
 }
 
 void printDistances()
 {
-  Serial.println("Distance 1 : ");
-  Serial.println(getDistance());
-  Serial.println("Distance 2 : ");
-  Serial.println(getDistance2());
+  Serial.println("Distance D : ");
+  Serial.println(getDistanceD());
+  Serial.println("Distance G : ");
+  Serial.println(getDistanceG());
 }
 
 void calibrate()
@@ -151,8 +161,9 @@ void slightLeft(float error)
 
 void slightLeft()
 {
-  motorL.write(90);
-  motorR.write(0);
+  Serial.println("Turning left");
+  motorL.write(90 + slowCorrector);
+  motorR.write(90 - normalCorrector);
   delay(200);
   motorL.write(90);
   motorR.write(90);
@@ -172,9 +183,10 @@ void slightRight(float error)
 }
 
 void slightRight()
-{
-  motorL.write(180);
-  motorR.write(90);
+{  
+  Serial.println("Turning right");
+  motorL.write(90 + normalCorrector);
+  motorR.write(90 - slowCorrector);
   delay(200);
   motorL.write(90);
   motorR.write(90);
@@ -193,25 +205,25 @@ void turnLeftandRight()
 
 void goStraight()
 {
-  float distanceLeft = getDistance();
-  float distanceRight = getDistance2();
+  float distanceRight = getDistanceD();
+  float distanceLeft = getDistanceG();
 
   long time = millis();
 
-  while(time + 2000 > millis())
+  while(time + 20000 > millis())
   {
-    distanceLeft = getDistance();
-    distanceRight = getDistance2();
-
-    //if(distanceLeft - margin > distanceRight) slightLeft(distanceLeft - margin - distanceRight);
-    //else if(distanceRight - margin > distanceLeft) slightRight(distanceRight - margin - distanceLeft);
-    if(distanceLeft - margin > distanceRight) slightLeft();
-    else if(distanceRight - margin > distanceLeft) slightRight();
+    distanceRight = getDistanceD();
+    distanceLeft = getDistanceG();
+    printDistances(distanceRight, distanceLeft);
+    //if(distanceRight - margin > distanceLeft) slightLeft(distanceRight - margin - distanceLeft);
+    //else if(distanceLeft - margin > distanceRight) slightRight(distanceLeft - margin - distanceRight);
+    if(distanceRight - margin > distanceLeft) slightRight();
+    else if(distanceLeft - margin > distanceRight) slightLeft();
     else
     {
       goForwardXMillis(300);
     }
-    printDistances(distanceLeft, distanceRight);
+    //delay(2000);
     toggle_led();
   }
 }
@@ -295,7 +307,5 @@ void loop() {
 
   checkPhysicalInput();
   checkConsoleInput();
-
-  //goStraight();
 
 }
