@@ -19,10 +19,12 @@
 Servo motorL;
 Servo motorR;
 
-const float margin = 3.0f;
+const float margin = 1.0f;
+
+long distanceReadUpdate;
+long ledupdate;
 
 bool launched = false;
-
 bool ledState = false;
 
 void setup() {
@@ -51,6 +53,14 @@ void setup() {
   digitalWrite(LED, LOW);
 
   Serial.begin(9600);
+
+  distanceReadUpdate = millis();
+  ledupdate = millis();
+
+  // Wait for button to start
+  while(!(digitalRead(CENTER_BUTTON) || launched));
+  Serial.println("Starting");
+  launched = true;
 }
 
 
@@ -92,6 +102,14 @@ float getDistance2()
   return result/nMesureDistance;
 }
 
+void printDistances(float distance1, float distance2)
+{
+  Serial.println("Distance 1 : ");
+  Serial.println(distance1);
+  Serial.println("Distance 2 : ");
+  Serial.println(distance2);
+}
+
 void printDistances()
 {
   Serial.println("Distance 1 : ");
@@ -102,12 +120,7 @@ void printDistances()
 
 void calibrate()
 {
-  motorR.write(90);
-  motorL.write(90);
-  while(true)
-  {
-    delay(100);
-  }
+  long time = 0;
 }
 
 void goForwardXMillis(int interval)
@@ -116,11 +129,10 @@ void goForwardXMillis(int interval)
   motorL.write(180);
   motorR.write(0);
 
-  delay(200);
+  delay(interval);
 
   motorL.write(90);
   motorR.write(90);
-
 }
 
 void slightLeft(float error)
@@ -135,7 +147,15 @@ void slightLeft(float error)
 
   motorL.write(90);
   motorR.write(90);
+}
 
+void slightLeft()
+{
+  motorL.write(90);
+  motorR.write(0);
+  delay(200);
+  motorL.write(90);
+  motorR.write(90);
 }
 
 void slightRight(float error)
@@ -149,7 +169,15 @@ void slightRight(float error)
 
   motorL.write(90);
   motorR.write(90);
+}
 
+void slightRight()
+{
+  motorL.write(180);
+  motorR.write(90);
+  delay(200);
+  motorL.write(90);
+  motorR.write(90);
 }
 
 void turnLeftandRight()
@@ -168,18 +196,22 @@ void goStraight()
   float distanceLeft = getDistance();
   float distanceRight = getDistance2();
 
-  while(true)
+  long time = millis();
+
+  while(time + 2000 > millis())
   {
     distanceLeft = getDistance();
     distanceRight = getDistance2();
 
-    if(distanceLeft - margin > distanceRight) slightLeft(distanceLeft - margin - distanceRight);
-    else if(distanceRight - margin > distanceLeft) slightRight(distanceRight - margin - distanceLeft);
+    //if(distanceLeft - margin > distanceRight) slightLeft(distanceLeft - margin - distanceRight);
+    //else if(distanceRight - margin > distanceLeft) slightRight(distanceRight - margin - distanceLeft);
+    if(distanceLeft - margin > distanceRight) slightLeft();
+    else if(distanceRight - margin > distanceLeft) slightRight();
     else
     {
-      goForwardXMillis(100);
+      goForwardXMillis(300);
     }
-    printDistances();
+    printDistances(distanceLeft, distanceRight);
     toggle_led();
   }
 }
@@ -189,12 +221,81 @@ void toggle_led() {
   digitalWrite(LED, ledState);
 }
 
-void loop() {
+void advanceBlock()
+{
+  motorL.write(180);
+  motorR.write(0);
 
-  // Wait for button to start
-  while(!(digitalRead(CENTER_BUTTON) || launched));
-  Serial.println("Starting");
-  launched = true;
+  delay(1750);
 
-  goStraight();
+  motorL.write(90);
+  motorR.write(90);
+}
+
+void turnLeft()
+{
+  motorL.write(0);
+  motorR.write(0);
+
+  delay(765);
+
+  motorL.write(90);
+  motorR.write(90);
+}
+
+void turnRight()
+{
+  motorL.write(180);
+  motorR.write(180);
+
+  delay(765);
+
+  motorL.write(90);
+  motorR.write(90);
+}
+
+void checkPhysicalInput()
+{
+  if(digitalRead(UP_BUTTON)) advanceBlock();
+  if(digitalRead(LEFT_BUTTON)) turnLeft();
+  if(digitalRead(RIGHT_BUTTON)) turnRight();
+}
+
+void checkConsoleInput()
+{
+  int incomingByte = 0; 
+  if (Serial.available() > 0) {
+    // read the incoming byte:
+    incomingByte = Serial.read();
+
+    // say what you got:
+    Serial.print("I received: ");
+    Serial.println(incomingByte, DEC);
+  }
+  if(incomingByte == 10) return;
+  if(incomingByte == 119) goStraight();
+  if(incomingByte == 97) turnLeft();
+  if(incomingByte == 100) turnRight();
+}
+
+void loop() { 
+
+  if(distanceReadUpdate + 500 < millis())
+  {
+    distanceReadUpdate = millis();
+    Serial.println("======= New mesures =======");
+    printDistances();
+    Serial.println();
+  }
+  if(ledupdate + 300 < millis())
+  {
+    ledupdate = millis();
+    toggle_led();
+  }
+
+  checkPhysicalInput();
+  checkConsoleInput();
+
+  //goStraight();
+
 }
