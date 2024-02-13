@@ -16,20 +16,7 @@
 #define keepDistanceG 4
 #define keepDistanceD 6
 
-#define leftPosition 180
-#define frontPosition 90
-
-#include <Servo.h>
-
-Servo motorL;
-Servo motorR;
-Servo servoMotor;
-
-const float margin = 1.0f;
-const int intmargin = 1;
-const int slowCorrector = 2;
-const int normalCorrector = 10;
-const int fastCorrector = 90;
+#include "controls.h"
 
 const int limitNoWall = 13; // If a sensor detects something further than "limitNoWall" cm away, it means there's a door
 
@@ -38,6 +25,18 @@ long ledupdate;
 
 bool launched = false;
 bool ledState = false;
+
+enum MenuResult
+{
+  shortLeft,
+  shortRight,
+  shortForward,
+  shortMid,
+  longLeft,
+  longRight,
+  longForward,
+  longMid
+};
 
 void setup() {
 
@@ -84,200 +83,9 @@ void setup() {
   launched = true;
 }
 
-
-//Distance to the right
-float getDistanceD()
-{
-  //take 'nMesureDistance' number of mesures and send their arithmetic mean
-  float result = 0;
-
-  for(int i = 0; i < nMesureDistance; i++)
-  {
-    digitalWrite(TRIG, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(TRIG, LOW);
-
-    result += 0.017 * pulseIn(ECHO, HIGH);
-
-    delayMicroseconds(1000);
-  }
-
-  return result/nMesureDistance;
-
-}
-
-//distance to the left
-float getDistanceG()
-{
-  //take 'nMesureDistance' number of mesures and send their arithmetic mean
-  float result = 0;
-
-  for(int i = 0; i < nMesureDistance; i++)
-  {
-    digitalWrite(TRIG2, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(TRIG2, LOW);
-
-    result += 0.017 * pulseIn(ECHO2, HIGH);
-
-    delayMicroseconds(1000);
-  }
-
-  return result/nMesureDistance;
-}
-
-void printDistances(float distanceD, float distanceG)
-{
-  Serial.println("Distance D : ");
-  Serial.println(distanceD);
-  Serial.println("Distance G : ");
-  Serial.println(distanceG);
-}
-
-void printDistances()
-{
-  Serial.println("Distance D : ");
-  Serial.println(getDistanceD());
-  Serial.println("Distance G : ");
-  Serial.println(getDistanceG());
-}
-
-/**
-  goForwardXMillis makes the robot advance forward for 'intervals' milliseconds
-   @param int interval - the number of milliseconds the robot will advance for
-*/
-void goForwardXMillis(int interval)
-{
-  Serial.println("Going forward!");
-  motorL.write(180);
-  motorR.write(0);
-
-  delay(interval);
-
-  motorL.write(90);
-  motorR.write(90);
-}
-
-void slightLeft(float error)
-{
-  Serial.print("I want ot go left with error ");
-  Serial.println(error);
-  
-  motorL.write(100 - error);
-  motorR.write(0);
-
-  delay(200);
-
-  motorL.write(90);
-  motorR.write(90);
-}
-
-/**
-  slightLeft make the robot make a slight left turn while continuing straight for 200 milliseconds
-*/
-void slightLeft()
-{
-  Serial.println("Turning left");
-  motorL.write(90 + slowCorrector);
-  motorR.write(90 - normalCorrector);
-  delay(200);
-  motorL.write(90);
-  motorR.write(90);
-}
-
-void slightRight(float error)
-{
-  Serial.println("I want ot go right");
-  
-  motorL.write(180);
-  motorR.write(80 + error);
-
-  delay(200);
-
-  motorL.write(90);
-  motorR.write(90);
-}
-
-/**
-  slightLeft make the robot make a slight right turn while continuing straight for 200 milliseconds
-*/
-void slightRight()
-{  
-  Serial.println("Turning right");
-  motorL.write(90 + normalCorrector);
-  motorR.write(90 - slowCorrector);
-  delay(200);
-  motorL.write(90);
-  motorR.write(90);
-}
-
-/**
-  goStraight makes the robot go straight while trying to keep an equal distance to the left and the right
-*/
-void goStraight(int interval)
-{
-  float distanceRight = getDistanceD();
-  float distanceLeft = getDistanceG();
-
-  long time = millis();
-
-  while(time + interval > millis())
-  {
-    //read distances
-    distanceRight = getDistanceD();
-    distanceLeft = getDistanceG();
-    printDistances(distanceRight, distanceLeft);
-
-    //if theres more space to the left then to the right we turn slightly left and the other way around for the distance on the right
-    //else go forwards
-    if(distanceRight - margin > distanceLeft) slightRight();
-    else if(distanceLeft - margin > distanceRight) slightLeft();
-    else
-    {
-      goForwardXMillis(300);
-    }
-
-    toggle_led();
-  }
-}
-
-
 void toggle_led() {
   ledState = !ledState;
   digitalWrite(LED, ledState);
-}
-
-void advanceBlock()
-{
-  motorL.write(180);
-  motorR.write(0);
-
-  delay(1750);
-
-  motorL.write(90);
-  motorR.write(90);
-}
-
-void turnLeft()
-{
-  motorL.write(0);
-  motorR.write(0);
-
-  delay(765);
-
-  motorL.write(90);
-  motorR.write(90);
-}
-
-void turnRight()
-{
-  motorL.write(180);
-  motorR.write(180);
-
-  delay(765);
-
-  motorL.write(90);
-  motorR.write(90);
 }
 
 void checkPhysicalInput()
@@ -285,6 +93,36 @@ void checkPhysicalInput()
   if(digitalRead(UP_BUTTON)) advanceBlock();
   if(digitalRead(LEFT_BUTTON)) turnLeft();
   if(digitalRead(RIGHT_BUTTON)) turnRight();
+}
+
+void waitMenuInput(int *result)
+{
+  while(false);
+  
+  //if multiple buttons are pressed, we acknowledge the first button pressed, we ignore the rest
+  if(digitalRead(UP_BUTTON)) advanceBlock();
+  if(digitalRead(LEFT_BUTTON)) turnLeft();
+  if(digitalRead(RIGHT_BUTTON)) turnRight();
+}
+
+void menu()
+{
+  //stop wheels
+  motorR.write(90);
+  motorL.write(90); 
+  int result;
+
+  //long hold left or right button will follow the wall to the left or the right.
+  waitMenuInput(&result);
+  switch(result)
+  {
+    case MenuResult::longLeft:
+      followLeftWall(300);
+      break;
+    case MenuResult::longRight:
+      followRightWall(300);
+      break;
+  }
 }
 
 void checkConsoleInput()
@@ -299,54 +137,9 @@ void checkConsoleInput()
     Serial.println(incomingByte, DEC);
   }
   if(incomingByte == 10) return;
-  if(incomingByte == 119) followRightWall(20000);
+  if(incomingByte == 119) followLeftWall(20000);
   if(incomingByte == 97) turnLeft();
   if(incomingByte == 100) turnRight();
-}
-
-void followLeftWall(float interval)
-{
-  long time = millis();
-
-  while(time + interval > millis())
-  {
-    float distanceLeft = getDistanceG();
-    printDistances();
-    if(distanceLeft < keepDistanceG) {
-      slightRight();
-  } else if(distanceLeft > keepDistanceG + intmargin) {
-      slightLeft();
-    } else {
-      goForwardXMillis(300);
-    }
-  }
-}
-
-void followRightWall(float interval)
-{
-  long time = millis();
-
-
-  servoMotor.write(frontPosition);
-  delay(500);
-
-  while(time + interval > millis())
-  {
-    float distanceRight = getDistanceD();
-    float distanceFront = getDistanceG();
-    printDistances();
-    if(distanceFront < keepDistanceD) turnLeft();
-    if(distanceRight < keepDistanceD) {
-      slightLeft();
-} else if(distanceRight > keepDistanceD + intmargin) {
-      slightRight();
-    } else {
-      goForwardXMillis(300);
-    }
-  }
-
-  servoMotor.write(leftPosition);
-  delay(500);
 }
 
 void escape()
