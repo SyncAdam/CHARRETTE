@@ -12,7 +12,7 @@
 #define CENTER_BUTTON 7
 #define RIGHT_BUTTON 8
 #define UP_BUTTON 13
-#define nMesureDistance 1
+#define nMesureDistance 5
 #define keepDistanceG 4
 #define keepDistanceD 6
 
@@ -90,7 +90,7 @@ void toggle_led() {
 
 void checkPhysicalInput()
 {
-  if(digitalRead(UP_BUTTON)) advanceBlock();
+  if(digitalRead(UP_BUTTON)) goStraight(30000);
   if(digitalRead(LEFT_BUTTON)) turnLeft();
   if(digitalRead(RIGHT_BUTTON)) followRightWall(30000);
 }
@@ -167,6 +167,6 @@ void loop()
   }
 
   checkPhysicalInput();
-  checkConsoleInput();
+  //checkConsoleInput();
 
 }

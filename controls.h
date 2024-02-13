@@ -139,22 +139,13 @@ void slightLeft(float error)
   motorR.write(90);
 }
 
+
+
 /**
   slightLeft make the robot make a slight left turn while continuing straight for 200 milliseconds
 */
-void slightLeft(int *motorAction)
+void slightLeft()
 {
-    switch(*motorAction)
-    {
-        case motorAction::SLIGHTLEFT:
-            break;
-        case motorAction::SLIGHTRIGHT:
-            for(int i = 0; i < normalCorrector - slowCorrector; i++)
-            {
-                motorL.write(90 + normalCorrector - i);
-            }
-
-    }
   Serial.println("Turning left");
   motorL.write(90 + slowCorrector);
   motorR.write(90 - normalCorrector);
@@ -179,7 +170,7 @@ void slightRight(float error)
 /**
   slightLeft make the robot make a slight right turn while continuing straight for 200 milliseconds
 */
-void slightRight(int *motorAction)
+void slightRight()
 {  
   Serial.println("Turning right");
   motorL.write(90 + normalCorrector);
@@ -349,6 +340,97 @@ void followLeftWall(float interval)
   }
 }
 
+void manageMovement(int * motorAction, int * prevMotorAction)
+{
+    long time = millis();
+    switch(*motorAction)
+    {
+        case motorAction::FORWARD:
+            if(*prevMotorAction == motorAction::SLIGHTRIGHT)
+            {
+                for(int i = 0; i < normalCorrector + 15; i++)
+                {
+                    motorL.write(90 + normalCorrector + i);
+                    motorR.write(90 - slowCorrector - i);
+                    delay(motorGradientDelayms);
+                }
+                motorL.write(180);
+                motorR.write(0);
+            }
+            else if(*prevMotorAction == motorAction::SLIGHTLEFT)
+            {
+                for(int i = 0; i < normalCorrector + 15; i++)
+                {
+                    motorL.write(90 + slowCorrector + i);
+                    motorR.write(90 - normalCorrector - i);
+                    delay(motorGradientDelayms);
+                }
+                motorL.write(180);
+                motorR.write(0);
+            }
+            else
+            {
+                Serial.println("Bro idk what to do.");
+            }
+            break;
+
+        case motorAction::SLIGHTLEFT:
+            if(*prevMotorAction == motorAction::FORWARD)
+            {
+                for(int i = 0; i < 15 - slowCorrector; i++)
+                {
+                    motorL.write(105 - i);     //goes to 90 + slowCorrect
+                    delay(motorGradientDelayms);
+                }
+            }
+            else if(*prevMotorAction == motorAction::SLIGHTRIGHT)
+            {
+                for(int i = 0; i < 15 - slowCorrector; i++)
+                {
+                    motorL.write(105 - i);    //goes to 90 + slowCorrect
+                    motorR.write(90 - slowCorrector - i);    //goes to 75 maybe?
+                    delay(motorGradientDelayms);
+                }
+            }
+            else
+            {
+                Serial.println("Bro idk what to do.");
+            }
+            break;
+
+        case motorAction::SLIGHTRIGHT:
+            if(*prevMotorAction == motorAction::FORWARD)
+            {
+                for(int i = 0; i < 15 - slowCorrector; i++)
+                {
+                    motorR.write(75 + i);
+                    delay(motorGradientDelayms);
+                }
+            }
+            else if(*prevMotorAction == motorAction::SLIGHTLEFT)
+            {
+                for(int i = 0; i < 15 - slowCorrector; i++)
+                {
+                    motorL.write(90 + slowCorrector + i);
+                    motorR.write(75 + i);
+                    delay(motorGradientDelayms);
+                }
+            }
+            else
+            {
+              Serial.println("Bro idk what to do.");
+            }
+            break;
+
+        default:
+            Serial.println("Bro idk what to do.");
+            break;
+    }
+    Serial.print("It took ");
+    Serial.print(millis() - time);
+    Serial.print(" ms-s to manage the movement");
+}
+
 void followRightWall(float interval)
 {
   long time = millis();
@@ -356,10 +438,10 @@ void followRightWall(float interval)
   servoMotor.write(frontPosition);
   delay(500);
   int motorAction = motorAction::STOPPED;
-
-    goForwardXMillis(0);
-    
-    motorAction = motorAction::FORWARD;
+  int prevMotorAction = motorAction;
+  
+  prevMotorAction = motorAction::FORWARD;
+  motorAction = motorAction::FORWARD;
 
   while(time + interval > millis())
   {
@@ -367,21 +449,30 @@ void followRightWall(float interval)
     float distanceFront = getDistanceG();
     printDistances();
 
-    if(distanceLeft < keepDistanceG)
+    if(distanceFront < keepDistanceG) turnLeft();
+    if(distanceRight < keepDistanceG)
     {
-        slightRight(&motorAction);
+        motorAction = motorAction::SLIGHTRIGHT;
     }
-    else if(distanceLeft > keepDistanceG + intmargin)
+    else if(distanceRight > keepDistanceG + intmargin)
     {
-        slightLeft(&motorAction);
+        motorAction = motorAction::SLIGHTLEFT;
     }
     else
     {
-        goForwardXMillis(0, &motorAction);
+        motorAction = motorAction::FORWARD;
     }
 
-
+    if(motorAction != prevMotorAction)
+    {
+      manageMovement(&motorAction, &prevMotorAction);
+    }
+    prevMotorAction = motorAction;
   }
+
+  motorAction = motorAction::STOPPED;
+
+  manageMovement(&motorAction, &prevMotorAction)
 
   servoMotor.write(leftPosition);
   delay(500);
