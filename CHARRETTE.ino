@@ -1,10 +1,10 @@
-#define LEFTMOTOR 11
-#define RIGHTMOTOR 10
-#define SERVOMOTOR 9
+#define LEFTMOTOR 11    //gauche
+#define RIGHTMOTOR 10   //milieu
+#define SERVOMOTOR 9    //droite
 
-#define TRIG 4
+#define TRIG 4        //capteur de droite branché a gauche
 #define ECHO 5
-#define TRIG2 2
+#define TRIG2 2       //capteur de gauche branché sur l'extremité
 #define ECHO2 3
 
 #define LED 6
@@ -92,7 +92,7 @@ void checkPhysicalInput()
 {
   if(digitalRead(UP_BUTTON)) advanceBlock();
   if(digitalRead(LEFT_BUTTON)) turnLeft();
-  if(digitalRead(RIGHT_BUTTON)) turnRight();
+  if(digitalRead(RIGHT_BUTTON)) followRightWall(30000);
 }
 
 void waitMenuInput(int *result)
@@ -101,7 +101,7 @@ void waitMenuInput(int *result)
   
   //if multiple buttons are pressed, we acknowledge the first button pressed, we ignore the rest
   if(digitalRead(UP_BUTTON)) advanceBlock();
-  if(digitalRead(LEFT_BUTTON)) turnLeft();
+  if(digitalRead(LEFT_BUTTON)) followRightWall(20000);
   if(digitalRead(RIGHT_BUTTON)) turnRight();
 }
 

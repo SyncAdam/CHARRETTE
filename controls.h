@@ -3,6 +3,7 @@
 
 #define leftPosition 180
 #define frontPosition 90
+#define motorGradientDelayms 20
 
 #include <Servo.h>
 
@@ -10,11 +11,23 @@ Servo motorL;
 Servo motorR;
 Servo servoMotor;
 
+enum motorAction
+{
+    STOPPED,
+    FORWARD,
+    SLIGHTRIGHT,
+    SLIGHTLEFT,
+    RIGHT,
+    LEFT
+};
+
 const float margin = 1.0f;
 const int intmargin = 1;
 const int slowCorrector = 2;
 const int normalCorrector = 10;
 const int fastCorrector = 90;
+
+int motorAction = 0;
 
 
 //Distance to the right
@@ -89,11 +102,25 @@ void turnSensor(bool *lookingLeft)
 void goForwardXMillis(int interval)
 {
   Serial.println("Going forward!");
+  for(int i = 0; i < 15; i++)
+  {
+    motorL.write(90 + i);
+    motorR.write(90 - i);
+    delay(motorGradientDelayms);
+  }
+
   motorL.write(180);
   motorR.write(0);
 
   delay(interval);
 
+  for(int i = 0; i < 15; i++)
+  {
+    motorL.write(105 - i);
+    motorR.write(75 + i);
+    delay(motorGradientDelayms);
+  }
+  
   motorL.write(90);
   motorR.write(90);
 }
@@ -115,8 +142,19 @@ void slightLeft(float error)
 /**
   slightLeft make the robot make a slight left turn while continuing straight for 200 milliseconds
 */
-void slightLeft()
+void slightLeft(int *motorAction)
 {
+    switch(*motorAction)
+    {
+        case motorAction::SLIGHTLEFT:
+            break;
+        case motorAction::SLIGHTRIGHT:
+            for(int i = 0; i < normalCorrector - slowCorrector; i++)
+            {
+                motorL.write(90 + normalCorrector - i);
+            }
+
+    }
   Serial.println("Turning left");
   motorL.write(90 + slowCorrector);
   motorR.write(90 - normalCorrector);
@@ -141,14 +179,11 @@ void slightRight(float error)
 /**
   slightLeft make the robot make a slight right turn while continuing straight for 200 milliseconds
 */
-void slightRight()
+void slightRight(int *motorAction)
 {  
   Serial.println("Turning right");
   motorL.write(90 + normalCorrector);
   motorR.write(90 - slowCorrector);
-  delay(200);
-  motorL.write(90);
-  motorR.write(90);
 }
 
 /**
@@ -184,32 +219,77 @@ void goStraight(int interval)
 
 void advanceBlock()
 {
+
+  for(int i = 0; i < 15; i++)
+  {
+    motorL.write(90 + i);
+    motorR.write(90 - i);
+    delay(motorGradientDelayms);
+  }
+
   motorL.write(180);
   motorR.write(0);
 
   delay(1750);
 
+  for(int i = 0; i < 15; i++)
+  {
+    motorL.write(105 - i);
+    motorR.write(75 + i);
+    delay(motorGradientDelayms);
+  }
+  
   motorL.write(90);
   motorR.write(90);
 }
 
 void turnLeft()
 {
+  for(int i = 0; i < 15; i++)
+  {
+    motorL.write(90 - i);
+    motorR.write(90 - i);
+    delay(motorGradientDelayms);
+  }
+
   motorL.write(0);
   motorR.write(0);
 
-  delay(765);
+  delay(200);
 
+  
+  for(int i = 0; i < 15; i++)
+  {
+    motorL.write(75 + i);
+    motorR.write(75 + i);
+    delay(motorGradientDelayms);
+  }
+  
   motorL.write(90);
   motorR.write(90);
 }
 
 void turnRight()
 {
+
+  for(int i = 0; i < 15; i++)
+  {
+    motorL.write(90 + i);
+    motorR.write(90 + i);
+    delay(motorGradientDelayms);
+  }
+
   motorL.write(180);
   motorR.write(180);
 
-  delay(765);
+  delay(150);
+
+  for(int i = 0; i < 15; i++)
+  {
+    motorL.write(105 - i);
+    motorR.write(105 - i);
+    delay(motorGradientDelayms);
+  }
 
   motorL.write(90);
   motorR.write(90);
@@ -249,11 +329,11 @@ void followLeftWall(float interval)
         }
         else
         {
-            goForwardXMillis(300);
+            goForwardXMillis(0);
         }
     }
 
-    lookForwardTime = (distanceForward / 19.0f)*1000                                              ; 
+    lookForwardTime = (distanceForward / 19.0f)*1000; 
 
     if(distanceLeft > keepDistanceG)
     {
@@ -275,6 +355,11 @@ void followRightWall(float interval)
 
   servoMotor.write(frontPosition);
   delay(500);
+  int motorAction = motorAction::STOPPED;
+
+    goForwardXMillis(0);
+    
+    motorAction = motorAction::FORWARD;
 
   while(time + interval > millis())
   {
@@ -282,19 +367,20 @@ void followRightWall(float interval)
     float distanceFront = getDistanceG();
     printDistances();
 
-    if(distanceFront < keepDistanceD) turnLeft();
-    if(distanceRight < keepDistanceD) 
+    if(distanceLeft < keepDistanceG)
     {
-      slightLeft();
+        slightRight(&motorAction);
     }
-    else if(distanceRight > keepDistanceD + intmargin)
+    else if(distanceLeft > keepDistanceG + intmargin)
     {
-      slightRight();
+        slightLeft(&motorAction);
     }
     else
     {
-      goForwardXMillis(300);
+        goForwardXMillis(0, &motorAction);
     }
+
+
   }
 
   servoMotor.write(leftPosition);
