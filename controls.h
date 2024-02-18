@@ -340,6 +340,44 @@ void followLeftWall(float interval)
   }
 }
 
+void calibrator()
+{
+  int i = 0;
+  int lasti = i;
+  int index = 0;
+  
+    motorL.write(90 + i);
+    motorR.write(90 - i);
+
+  while(true)
+  {
+
+    if(digitalRead(UP_BUTTON))
+    {
+      index++;
+      Serial.print("writing pm ");
+      Serial.print(index);
+      Serial.println(" to the motors");
+      motorL.write(90 + index);
+      motorR.write(90 - index);
+      delay(200);
+    }
+    else if(digitalRead(CENTER_BUTTON))
+    {
+      index--;
+      Serial.print("writing pm ");
+      Serial.print(index);
+      Serial.println(" to the motors");
+      motorL.write(90 + index);
+      motorR.write(90 - index);
+      
+      delay(200);
+    }
+
+    lasti = i;
+  }
+}
+
 void manageMovement(int * motorAction, int * prevMotorAction)
 {
     long time = millis();
@@ -394,7 +432,7 @@ void manageMovement(int * motorAction, int * prevMotorAction)
             }
             else
             {
-                Serial.println("Bro idk what to do.");
+                Serial.println("2 Bro idk what to do.");
             }
             break;
 
@@ -418,12 +456,24 @@ void manageMovement(int * motorAction, int * prevMotorAction)
             }
             else
             {
-              Serial.println("Bro idk what to do.");
+              Serial.println("3 Bro idk what to do. I might stall.");
+              motorL.write(90 + normalCorrector);
+              motorR.write(90 - slowCorrector);
             }
             break;
 
+        case motorAction::LEFT:
+            turnLeft();
+            break;
+
+        case motorAction::STOPPED:
+            Serial.println("Stopping...");
+            motorL.write(90);
+            motorR.write(90);
+            break;
+
         default:
-            Serial.println("Bro idk what to do.");
+            Serial.println("4 Bro idk what to do.");
             break;
     }
     Serial.print("It took ");
@@ -443,13 +493,18 @@ void followRightWall(float interval)
   prevMotorAction = motorAction::FORWARD;
   motorAction = motorAction::FORWARD;
 
+  bool wantTurn = false;
+
   while(time + interval > millis())
   {
     float distanceRight = getDistanceD();
     float distanceFront = getDistanceG();
     printDistances();
 
-    if(distanceFront < keepDistanceG) turnLeft();
+    if(distanceFront < keepDistanceG)
+    {
+      turnLeft();
+    }
     if(distanceRight < keepDistanceG)
     {
         motorAction = motorAction::SLIGHTRIGHT;
@@ -472,7 +527,7 @@ void followRightWall(float interval)
 
   motorAction = motorAction::STOPPED;
 
-  manageMovement(&motorAction, &prevMotorAction)
+  manageMovement(&motorAction, &prevMotorAction);
 
   servoMotor.write(leftPosition);
   delay(500);

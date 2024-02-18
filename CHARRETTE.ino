@@ -17,6 +17,7 @@
 #define keepDistanceD 6
 
 #include "controls.h"
+#include "newControls.h"
 
 const int limitNoWall = 13; // If a sensor detects something further than "limitNoWall" cm away, it means there's a door
 
@@ -90,9 +91,9 @@ void toggle_led() {
 
 void checkPhysicalInput()
 {
-  if(digitalRead(UP_BUTTON)) goStraight(30000);
+  if(digitalRead(UP_BUTTON)) //goStraight(30000);
   if(digitalRead(LEFT_BUTTON)) turnLeft();
-  if(digitalRead(RIGHT_BUTTON)) followRightWall(30000);
+  if(digitalRead(RIGHT_BUTTON)) control::escape(30000);
 }
 
 void waitMenuInput(int *result)
@@ -140,15 +141,6 @@ void checkConsoleInput()
   if(incomingByte == 119) followLeftWall(20000);
   if(incomingByte == 97) turnLeft();
   if(incomingByte == 100) turnRight();
-}
-
-void escape()
-{
-  float distanceLeft = getDistanceG();
-  float distanceRight = getDistanceD();
-  //======================
-
-
 }
 
 void loop()
