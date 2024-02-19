@@ -20,6 +20,8 @@
 
 const int limitNoWall = 13; // If a sensor detects something further than "limitNoWall" cm away, it means there's a door
 
+//const int directions[] = ''
+
 long distanceReadUpdate;
 long ledupdate;
 
@@ -90,22 +92,22 @@ void toggle_led() {
 
 void checkPhysicalInput()
 {
-  if(digitalRead(UP_BUTTON)) //goStraight(30000);
-  if(digitalRead(LEFT_BUTTON)) control::followLeft(30000);
+  Serial.println(digitalRead(LEFT_BUTTON));
+  if(digitalRead(UP_BUTTON)); //goStraight(30000);
+  if(digitalRead(LEFT_BUTTON)); // control::followLeft(30000);
   if(digitalRead(RIGHT_BUTTON)) control::followRight(30000);
 }
 
-/*
-void waitMenuInput(int *result)
+
+/*void waitMenuInput(int *result)
 {
   while(false);
   
   //if multiple buttons are pressed, we acknowledge the first button pressed, we ignore the rest
-  if(digitalRead(UP_BUTTON)) advanceBlock();
-  if(digitalRead(LEFT_BUTTON)) followRightWall(20000);
-  if(digitalRead(RIGHT_BUTTON)) turnRight();
+  if(digitalRead(UP_BUTTON));
+  if(digitalRead(LEFT_BUTTON)) followRight(20000);
+  if(digitalRead(RIGHT_BUTTON)) followLeft(20000);
 }
-*/
 
 void menu()
 {
@@ -142,7 +144,7 @@ void checkConsoleInput()
   if(incomingByte == 119) followLeftWall(20000);
   if(incomingByte == 97) turnLeft();
   if(incomingByte == 100) turnRight();
-}
+}*/
 
 void loop()
 {

@@ -42,17 +42,12 @@
 
 //----------------------------------
 
-
     Servo motorL;
     Servo motorR;
     Servo servoMotor;
 
 namespace control
-{
-
-
-    float lastMesures[40];
- 
+{ 
     enum motorAction
     {
         STOPPED,
@@ -71,12 +66,16 @@ namespace control
     }
 
     //distance to the left
-    float getDistanceL()
+    float getDistanceL(bool wait)
     {
         //take 'nMesureDistance' number of mesures and send their arithmetic mean
         float result = 0;
 
         servoMotor.write(leftPosition);
+
+        if(wait) {
+            delay(500);
+        }
 
         for(int i = 0; i < nMesureDistance; i++)
         {
@@ -113,12 +112,15 @@ namespace control
     }
 
     //distance to the front
-    float getDistanceF()
+    float getDistanceF(bool wait)
     {
         //take 'nMesureDistance' number of mesures and send their arithmetic mean
         float result = 0;
 
         servoMotor.write(frontPosition);
+        if(wait) {
+            delay(500);
+        }
 
         for(int i = 0; i < nMesureDistance; i++)
         {
@@ -139,15 +141,6 @@ namespace control
     */
     void takeAction(int* action, int* lmotorSpeed, int* rmotorSpeed, float deltaD)
     {
-        /*
-        long time = millis();
-        Serial.print("Left motor speed = ");
-        Serial.println(*lmotorSpeed);
-        Serial.print("Right motor speed = ");
-        Serial.println(*rmotorSpeed);
-        Serial.print("DeltaD = ");
-        Serial.println(deltaD);
-        */
        
         int newlmotorSpeed = *lmotorSpeed;
         int newrmotorSpeed = *rmotorSpeed;
@@ -161,96 +154,55 @@ namespace control
             case motorAction::FORWARD:
                 wantedLSpeed = motorForwardL;
                 wantedRSpeed = motorForwardR;
-
-                if(*lmotorSpeed < wantedLSpeed) newlmotorSpeed = *lmotorSpeed + motorGradientStep;
-                if(*rmotorSpeed > wantedRSpeed) newrmotorSpeed = *rmotorSpeed - motorGradientStep;
-
                 break;
 
             case motorAction::SLIGHTLEFT:
                 wantedLSpeed = motorMediumForwardL;
                 wantedRSpeed = motorForwardR;
-
-                if(*lmotorSpeed < wantedLSpeed) newlmotorSpeed = *lmotorSpeed + motorGradientStep;
-                else if(*lmotorSpeed > wantedLSpeed) newlmotorSpeed = *lmotorSpeed - motorGradientStep;
-                if(*rmotorSpeed > wantedRSpeed) newrmotorSpeed = *rmotorSpeed - motorGradientStep;
-
                 break;
 
             case motorAction::SLIGHTRIGHT:
                 wantedLSpeed = motorForwardL;
                 wantedRSpeed = motorMediumForwardR;
-
-                if(*lmotorSpeed < wantedLSpeed) newlmotorSpeed = *lmotorSpeed + motorGradientStep;
-                if(*rmotorSpeed > wantedRSpeed) newrmotorSpeed = *rmotorSpeed - motorGradientStep;
-                else if(*rmotorSpeed < wantedRSpeed) newrmotorSpeed = *rmotorSpeed + motorGradientStep;
-
                 break;
 
             case motorAction::MEDIUMLEFT:
                 wantedLSpeed = motorMediumForwardL;
                 wantedRSpeed = motorForwardR;
-
-                if(*lmotorSpeed < wantedLSpeed) newlmotorSpeed = *lmotorSpeed + motorGradientStep;
-                else if(*lmotorSpeed > wantedLSpeed) newlmotorSpeed = *lmotorSpeed - motorGradientStep;
-                if(*rmotorSpeed > wantedRSpeed) newrmotorSpeed = *rmotorSpeed - motorGradientStep;
-
                 break;
 
             case motorAction::MEDIUMRIGHT:
                 wantedLSpeed = motorForwardL;
                 wantedRSpeed = motorMediumForwardR;
-
-                if(*lmotorSpeed < wantedLSpeed) newlmotorSpeed = *lmotorSpeed + motorGradientStep;
-                if(*rmotorSpeed > wantedRSpeed) newrmotorSpeed = *rmotorSpeed - motorGradientStep;
-                else if(*rmotorSpeed < wantedRSpeed) newrmotorSpeed = *rmotorSpeed + motorGradientStep;
-
                 break;
 
 
             case motorAction::LEFT:
                 wantedLSpeed = motorMediumBackwardL;
                 wantedRSpeed = motorForwardR;
-
-                if(*lmotorSpeed < wantedLSpeed) newlmotorSpeed = *lmotorSpeed + motorGradientStep;
-                else if(*lmotorSpeed > wantedLSpeed) newlmotorSpeed = *lmotorSpeed - motorGradientStep;
-                if(*rmotorSpeed > wantedRSpeed) newrmotorSpeed = *rmotorSpeed - motorGradientStep;
-
                 break;
 
             case motorAction::RIGHT:
                 wantedLSpeed = motorForwardL;
                 wantedRSpeed = motorMediumBackwardR;
-
-                if(*lmotorSpeed < wantedLSpeed) newlmotorSpeed = *lmotorSpeed + motorGradientStep;
-                if(*rmotorSpeed > wantedRSpeed) newrmotorSpeed = *rmotorSpeed - motorGradientStep;
-                else if(*rmotorSpeed < wantedRSpeed) newrmotorSpeed = *rmotorSpeed + motorGradientStep;
-
                 break;
 
             case motorAction::STOPPED:
                 wantedLSpeed = motorStopL;
                 wantedRSpeed = motorStopR;
-
-                if(*lmotorSpeed < wantedLSpeed) newlmotorSpeed = *lmotorSpeed + motorGradientStep;
-                else if(*lmotorSpeed > wantedLSpeed) newlmotorSpeed = *lmotorSpeed - motorGradientStep;
-                if(*rmotorSpeed > wantedRSpeed) newrmotorSpeed = *rmotorSpeed - motorGradientStep;
-                else if(*rmotorSpeed < wantedRSpeed) newrmotorSpeed = *rmotorSpeed + motorGradientStep;
-
                 break;
 
             default:
                 wantedLSpeed = motorStopL;
                 wantedRSpeed = motorStopR;
-
-                if(*lmotorSpeed < wantedLSpeed) newlmotorSpeed = *lmotorSpeed + motorGradientStep;
-                else if(*lmotorSpeed > wantedLSpeed) newlmotorSpeed = *lmotorSpeed - motorGradientStep;
-                if(*rmotorSpeed > wantedRSpeed) newrmotorSpeed = *rmotorSpeed - motorGradientStep;
-                else if(*rmotorSpeed < wantedRSpeed) newrmotorSpeed = *rmotorSpeed + motorGradientStep;
-
                 break;
 
         }
+
+        if(*lmotorSpeed < wantedLSpeed) newlmotorSpeed = *lmotorSpeed + motorGradientStep;
+        else if(*lmotorSpeed > wantedLSpeed) newlmotorSpeed = *lmotorSpeed - motorGradientStep;
+        if(*rmotorSpeed > wantedRSpeed) newrmotorSpeed = *rmotorSpeed - motorGradientStep;
+        else if(*rmotorSpeed < wantedRSpeed) newrmotorSpeed = *rmotorSpeed + motorGradientStep;
 
         if(newlmotorSpeed != *lmotorSpeed || newrmotorSpeed != *rmotorSpeed)
         {
@@ -260,22 +212,19 @@ namespace control
             *rmotorSpeed = newrmotorSpeed;
         }
 
-        /*
-        Serial.print("it took ");
-        Serial.print(millis() - time);
-        Serial.println(" ms to take action\n");
-        */
     }
 
     void followRight(int interval)
     {
+        //float lastMesures[40];
+        //int mesureIndex = 0;
 
         servoMotor.write(frontPosition);
         delay(500);
 
         bool ledState = false;
 
-        float distanceFront = getDistanceL();
+        float distanceFront = getDistanceF(false);
         float distanceRight = getDistanceR();
 
         float mesureR1;
@@ -299,8 +248,16 @@ namespace control
         while(time + interval > millis())
         {
             long myTime = millis();
-            distanceFront = getDistanceL();
+            distanceFront = getDistanceF(false);
             distanceRight = getDistanceR();
+
+            /*
+            lastMesures[index] = distanceRight;
+            if(index < 40)
+            {
+                i++;
+            }  
+            */
 
             //Serial.println(distanceRight);
 
@@ -376,17 +333,18 @@ namespace control
         }
     }
 
-    //En développement
-    void followLeft(int interval)
+    //In progress
+   /* void followLeft(int interval)
     {
-
+        Serial.println("Following left");
         servoMotor.write(frontPosition);
         delay(500);
 
         bool ledState = false;
+        bool needToCheckFront = true;
 
-        float distanceFront = getDistanceF();
-        float distanceLeft = getDistanceL();
+        float distanceFront = getDistanceF(false);
+        float distanceLeft = getDistanceL(false);
 
         float mesureR1;
         float mesureR2;
@@ -403,13 +361,17 @@ namespace control
         long rightTriggeredTimer;
 
         long ledTimer = millis();
+        long frontTimer = millis();
 
         //loop time fairly consistent, no need to take in accound in the deltaD
 
         while(time + interval > millis())
         {
             long myTime = millis();
-            distanceFront = getDistanceF();
+            if(needToCheckFront) {
+                distanceFront = getDistanceF();
+                if(distanceFront )
+            }
             distanceLeft = getDistanceL();
 
             //Serial.println(distanceRight);
@@ -473,14 +435,6 @@ namespace control
                 ledTimer = millis();
             }
 
-            /*
-
-            Serial.print("\n inputing ");
-            Serial.print(mesureR2);
-            Serial.print(" - ");
-            Serial.print(mesureR1);
-            Serial.println(" into take action function");
-            */
             takeAction(&action, &lmotorSpeed, &rmotorSpeed, (mesureR2 - mesureR1));
 
             mesureR1 = getDistanceR();
@@ -495,7 +449,7 @@ namespace control
         {   
             takeAction(&action, &lmotorSpeed, &rmotorSpeed, 0);
         }
-    }
+    }*/
 
 }
 
