@@ -66,16 +66,10 @@ namespace control
     }
 
     //distance to the left
-    float getDistanceL(bool wait)
+    float getDistanceL()
     {
         //take 'nMesureDistance' number of mesures and send their arithmetic mean
         float result = 0;
-
-        servoMotor.write(leftPosition);
-
-        if(wait) {
-            delay(500);
-        }
 
         for(int i = 0; i < nMesureDistance; i++)
         {
@@ -89,6 +83,8 @@ namespace control
         }
 
         return result/nMesureDistance;
+        
+        
     }
     
     float getDistanceR()
@@ -112,16 +108,10 @@ namespace control
     }
 
     //distance to the front
-    float getDistanceF(bool wait)
+    float getDistanceF()
     {
         //take 'nMesureDistance' number of mesures and send their arithmetic mean
         float result = 0;
-
-        servoMotor.write(frontPosition);
-        if(wait) {
-            delay(500);
-        }
-
         for(int i = 0; i < nMesureDistance; i++)
         {
             digitalWrite(TRIG2, HIGH);
@@ -132,6 +122,7 @@ namespace control
 
             delayMicroseconds(1000);
         }
+        
 
         return result/nMesureDistance;
     }
@@ -214,17 +205,27 @@ namespace control
 
     }
 
+    //arrays are pointers
+    void shiftArray(int array[], int arraySize)
+    {
+        for(int i = 1; i < arraySize; i++)
+        {
+            array[i - 1] = array[i];
+        }
+    }
+
     void followRight(int interval)
     {
-        //float lastMesures[40];
-        //int mesureIndex = 0;
+        const int lastMesureSize = 40;
+        int lastRightMesures[lastMesureSize];
+        int mesureRightIndex = 0;
 
         servoMotor.write(frontPosition);
         delay(500);
 
         bool ledState = false;
 
-        float distanceFront = getDistanceF(false);
+        float distanceFront = getDistanceF();
         float distanceRight = getDistanceR();
 
         float mesureR1;
@@ -248,16 +249,8 @@ namespace control
         while(time + interval > millis())
         {
             long myTime = millis();
-            distanceFront = getDistanceF(false);
-            distanceRight = getDistanceR();
-
-            /*
-            lastMesures[index] = distanceRight;
-            if(index < 40)
-            {
-                i++;
-            }  
-            */
+            distanceFront = getDistanceF();
+            distanceRight = getDistanceR();            
 
             //Serial.println(distanceRight);
 
@@ -318,6 +311,19 @@ namespace control
                 ledTimer = millis();
             }
 
+            if(!(mesureRightIndex < lastMesureSize )
+
+            if(mesureRightIndex < lastMesureSize)
+            {
+                lastRightMesures[mesureRightIndex] = action;
+                mesureRightIndex++;
+            }
+            else
+            {
+                shiftArray(lastRightMesures, lastMesureSize);
+                lastRightMesures[lastMesureSize - 1] = action;
+            }
+
             takeAction(&action, &lmotorSpeed, &rmotorSpeed, (mesureR2 - mesureR1));
 
             mesureR1 = getDistanceR();
@@ -334,7 +340,7 @@ namespace control
     }
 
     //In progress
-   /* void followLeft(int interval)
+    void followLeft(int interval)
     {
         Serial.println("Following left");
         servoMotor.write(frontPosition);
@@ -342,9 +348,12 @@ namespace control
 
         bool ledState = false;
         bool needToCheckFront = true;
+        bool lookingFront = false;
 
-        float distanceFront = getDistanceF(false);
-        float distanceLeft = getDistanceL(false);
+        float distanceFront = getDistanceF();
+        servoMotor.write(leftPosition);
+        delay(500);
+        float distanceLeft = getDistanceL();
 
         float mesureR1;
         float mesureR2;
@@ -369,10 +378,25 @@ namespace control
         {
             long myTime = millis();
             if(needToCheckFront) {
-                distanceFront = getDistanceF();
+                if(!lookingFront) {
+                    servoMotor.write(frontPosition);
+                    lookingFront = true;
+                }
+                
+                if(millis() - frontTimer >= 500) {
+                    distanceFront = getDistanceF();
+                    servoMotor.write(leftPosition);
+                } else if(millis() - frontTimer - 500 >= 500) {
+                    lookingFront = false;
+                }
+                
                 if(distanceFront )
             }
-            distanceLeft = getDistanceL();
+
+            if(!lookingFront) {
+                distanceLeft = getDistanceL();
+            }
+            
 
             //Serial.println(distanceRight);
 
@@ -449,7 +473,7 @@ namespace control
         {   
             takeAction(&action, &lmotorSpeed, &rmotorSpeed, 0);
         }
-    }*/
+    }
 
 }
 
