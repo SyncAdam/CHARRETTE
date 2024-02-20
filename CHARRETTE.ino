@@ -94,7 +94,7 @@ void checkPhysicalInput()
 {
   int position = leftPosition;
   if(digitalRead(UP_BUTTON)); //goStraight(30000);
-  if(digitalRead(LEFT_BUTTON)) control::followLeft(30000, &position);
+  if(digitalRead(LEFT_BUTTON)); //control::followLeft(30000, &position);
   if(digitalRead(RIGHT_BUTTON)) escape();
 }
 
@@ -109,12 +109,20 @@ void escape()
   const int forthStep = 10000;
   int servoPosition = leftPosition;
 
+  int lmotorSpeed = motorStopL;
+  int rmotorSpeed = motorStopR;
+
   long time = millis();  
 
-  control::followLeft(firstStep, &servoPosition);
-  control::followRight(secondStep, &servoPosition);
-  control::followLeft(thirdStep, &servoPosition);
-  control::followRight(forthStep, &servoPosition);
+  Serial.println("Going to follow Left 1");
+  control::followLeft(firstStep, &servoPosition, &lmotorSpeed, &rmotorSpeed);
+  Serial.println("Going to follow Right 1");
+  control::followRight(secondStep, &servoPosition, &lmotorSpeed, &rmotorSpeed);
+  Serial.println("Going to follow Left 2");
+  control::followLeft(thirdStep, &servoPosition, &lmotorSpeed, &rmotorSpeed);
+  Serial.println("Going to follow Right 2");
+  control::followRight(forthStep, &servoPosition, &lmotorSpeed, &rmotorSpeed);
+  Serial.println("Finished !");
 
   /*
   while(time + firstStep < millis())

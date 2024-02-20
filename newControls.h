@@ -232,7 +232,7 @@ namespace control
         else if(result > motorAction::RIGHT - directionLRMargin) Serial.println("I probably just turned right");
     }
 
-    void followRight(int interval, int *servoPosition/*, int lastRightActions[], int lastActionsSize, int* actionRightIndex*/)
+    void followRight(int interval, int *servoPosition, int* lmotorSpeed, int* rmotorSpeed/*, int lastRightActions[], int lastActionsSize, int* actionRightIndex*/)
     {
 
         long started = millis();
@@ -251,8 +251,6 @@ namespace control
         int action = motorAction::FORWARD;
         int prevAction = motorAction::STOPPED;
 
-        int lmotorSpeed = motorStopL;
-        int rmotorSpeed = motorStopR;
         bool leftTriggered = false;
         long leftTriggeredTimer;
         bool ignoreFront = false;
@@ -277,6 +275,10 @@ namespace control
                 distanceFront = 100;
                 if(*servoPosition - frontPosition < 0) *servoPosition += servoStep;
                 else if(*servoPosition - frontPosition > 0) *servoPosition -= servoStep;
+                else if(*servoPosition == frontPosition) {
+                    ignoreFront = false;
+                    distanceFront = getDistanceF();
+                }
 
                 servoMotor.write(*servoPosition);
             }
@@ -360,7 +362,7 @@ namespace control
             }
             */
 
-            takeAction(&action, &lmotorSpeed, &rmotorSpeed, (mesureR2 - mesureR1));
+            takeAction(&action, lmotorSpeed, rmotorSpeed, (mesureR2 - mesureR1));
             //detectMovement(lastRightActions, lastActionsSize);
 
             mesureR1 = getDistanceR();
@@ -386,13 +388,13 @@ namespace control
     }
 
     //In progress
-    void followLeft(int interval, int* servoPosition/*, int lastRightActions[], int lastActionsSize, int* actionRightIndex*/)
+    void followLeft(int interval, int* servoPosition, int* lmotorSpeed, int* rmotorSpeed/*, int lastRightActions[], int lastActionsSize, int* actionRightIndex*/)
     {
 
         while(*servoPosition != leftPosition)
         {
-            if(*servoPosition - leftPosition < 0) *servoPosition += motorGradientSmallStep;
-            else if(*servoPosition - leftPosition > 0) *servoPosition -= motorGradientSmallStep;
+            if(*servoPosition - leftPosition < 0) *servoPosition += servoStep;
+            else if(*servoPosition - leftPosition > 0) *servoPosition -= servoStep;
             servoMotor.write(*servoPosition);
             delay(1);
         }
@@ -412,19 +414,18 @@ namespace control
         int action = motorAction::FORWARD;
         int prevAction = motorAction::STOPPED;
 
-        int lmotorSpeed = motorStopL;
-        int rmotorSpeed = motorStopR;
         bool rightTriggered = false;
         long rightTriggeredTimer;
 
         long ledTimer = millis();
         long frontTimer = millis();
+        
 
         //loop time fairly consistent, no need to take in accound in the deltaD
 
         while(time + interval > millis())
         {
-            long myTime = millis();  
+            long myTime = millis();
 
             distanceLeft = getDistanceL();          
 
@@ -474,7 +475,7 @@ namespace control
                 ledTimer = millis();
             }
 
-            takeAction(&action, &lmotorSpeed, &rmotorSpeed, (mesureR2 - mesureR1));
+            takeAction(&action, lmotorSpeed, rmotorSpeed, (mesureR2 - mesureR1));
 
             mesureR1 = getDistanceR();
 
