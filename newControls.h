@@ -17,9 +17,10 @@
 #define motorReverseR 105
 #define motorGradientSmallStep 1
 #define motorGradientBigStep 2
+#define servoStep 5
 
 #define keepDistanceFront 4.7
-#define keepDistanceR 5.0
+#define keepDistanceR 5.2
 #define keepDistanceL 5.2
 #define margin 0.25
 #define deltaMargin 0.25
@@ -231,10 +232,10 @@ namespace control
         else if(result > motorAction::RIGHT - directionLRMargin) Serial.println("I probably just turned right");
     }
 
-    void followRight(int interval, int lastRightActions[], int lastActionsSize, int* actionRightIndex)
+    void followRight(int interval, int *servoPosition/*, int lastRightActions[], int lastActionsSize, int* actionRightIndex*/)
     {
-        servoMotor.write(frontPosition);
-        delay(500);
+
+        long started = millis();
 
         bool ledState = false;
 
@@ -254,6 +255,12 @@ namespace control
         int rmotorSpeed = motorStopR;
         bool leftTriggered = false;
         long leftTriggeredTimer;
+        bool ignoreFront = false;
+
+        if(*servoPosition != frontPosition)
+        {
+            ignoreFront = true;       
+        }
 
         long ledTimer = millis();
 
@@ -261,8 +268,24 @@ namespace control
 
         while(time + interval > millis())
         {
-            distanceFront = getDistanceF();
-            distanceRight = getDistanceR();            
+            if(!ignoreFront)
+            {
+                distanceFront = getDistanceF();
+            }
+            else
+            {
+                distanceFront = 100;
+                if(*servoPosition - frontPosition < 0) *servoPosition += servoStep;
+                else if(*servoPosition - frontPosition > 0) *servoPosition -= servoStep;
+
+                servoMotor.write(*servoPosition);
+            }
+            distanceRight = getDistanceR();   
+
+            while(started + 500 > millis())
+            {
+                distanceFront = 100;
+            }         
 
             long myTime = millis();
             //Serial.println(distanceRight);
@@ -323,6 +346,7 @@ namespace control
                 toggle_led(&ledState);
                 ledTimer = millis();
             }
+            /*
             
             if(!(*actionRightIndex < lastActionsSize))
             {
@@ -334,9 +358,10 @@ namespace control
                 lastRightActions[*actionRightIndex] = action;
                 *actionRightIndex++;
             }
+            */
 
             takeAction(&action, &lmotorSpeed, &rmotorSpeed, (mesureR2 - mesureR1));
-            detectMovement(lastRightActions, lastActionsSize);
+            //detectMovement(lastRightActions, lastActionsSize);
 
             mesureR1 = getDistanceR();
 
@@ -347,6 +372,7 @@ namespace control
             */
         }
         
+        /*
         action = motorAction::STOPPED;
 
         servoMotor.write(leftPosition);
@@ -356,22 +382,25 @@ namespace control
             takeAction(&action, &lmotorSpeed, &rmotorSpeed, 0);
             delay(20);
         }
+        */
     }
 
     //In progress
-    void followLeft(int interval, int lastRightActions[], int lastActionsSize, int* actionRightIndex)
+    void followLeft(int interval, int* servoPosition/*, int lastRightActions[], int lastActionsSize, int* actionRightIndex*/)
     {
-        Serial.println("Following left");
-        servoMotor.write(frontPosition);
-        delay(500);
+
+        while(*servoPosition != leftPosition)
+        {
+            if(*servoPosition - leftPosition < 0) *servoPosition += motorGradientSmallStep;
+            else if(*servoPosition - leftPosition > 0) *servoPosition -= motorGradientSmallStep;
+            servoMotor.write(*servoPosition);
+            delay(1);
+        }
 
         bool ledState = false;
         bool needToCheckFront = true;
         bool lookingFront = false;
 
-        float distanceFront = getDistanceF();
-        servoMotor.write(leftPosition);
-        delay(500);
         float distanceLeft = getDistanceL();
 
         float mesureR1;
@@ -450,6 +479,8 @@ namespace control
             mesureR1 = getDistanceR();
 
         }
+
+        /*
         
         action = motorAction::STOPPED;
 
@@ -460,6 +491,7 @@ namespace control
             takeAction(&action, &lmotorSpeed, &rmotorSpeed, 0);
             delay(20);
         }
+        */
     }
 
 }

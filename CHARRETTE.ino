@@ -92,14 +92,10 @@ void toggle_led() {
 
 void checkPhysicalInput()
 {
+  int position = leftPosition;
   if(digitalRead(UP_BUTTON)); //goStraight(30000);
-  if(digitalRead(LEFT_BUTTON)) control::followLeft(30000);
+  if(digitalRead(LEFT_BUTTON)) control::followLeft(30000, &position);
   if(digitalRead(RIGHT_BUTTON)) escape();
-}
-
-void programmedEscape()
-{
-
 }
 
 void escape()
@@ -107,39 +103,40 @@ void escape()
   int movement = 0;
   int lastMovement = movement;
 
-  const int firstStep = 3000;
+  const int firstStep = 2000;
   const int secondStep = 4000;
-  const int thirdStep = 4000;
+  const int thirdStep = 2000;
   const int forthStep = 10000;
+  int servoPosition = leftPosition;
 
-  const int actionTimer = 150;
+  long time = millis();  
 
-  long time = millis();
+  control::followLeft(firstStep, &servoPosition);
+  control::followRight(secondStep, &servoPosition);
+  control::followLeft(thirdStep, &servoPosition);
+  control::followRight(forthStep, &servoPosition);
 
-  const int lastActionsSize = 20;
-  int lastRightActions[lastActionsSize];
-  int actionRightIndex = 0;
-
-  while(time + firstStep > millis())
+  /*
+  while(time + firstStep < millis())
   {
     control::followLeft(actionTimer, lastRightActions, lastActionsSize, &actionRightIndex);
   }
   time = millis();
-  while(time + secondStep > millis())
+  while(time + secondStep < millis())
   {
     control::followRight(actionTimer, lastRightActions, lastActionsSize, &actionRightIndex);
   }
   time = millis();
-  while(time + thirdStep > millis())
+  while(time + thirdStep < millis())
   {
     control::followLeft(actionTimer, lastRightActions, lastActionsSize, &actionRightIndex);
   }
   time = millis();
-  while(time + forthStep > millis())
+  while(time + forthStep < millis())
   {
     control::followRight(actionTimer, lastRightActions, lastActionsSize, &actionRightIndex);
   }
-
+  */
 }
 
 
