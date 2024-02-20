@@ -92,7 +92,6 @@ void toggle_led() {
 
 void checkPhysicalInput()
 {
-  Serial.println(digitalRead(LEFT_BUTTON));
   if(digitalRead(UP_BUTTON)); //goStraight(30000);
   if(digitalRead(LEFT_BUTTON)) control::followLeft(30000);
   if(digitalRead(RIGHT_BUTTON)) control::followRight(30000);

@@ -31,11 +31,14 @@
 #define leftTriggerTimemillis 500
 #define rightTriggerTimemillis 500
 
-#define nMesureDistance 5
+#define nMesureDistance 3
 
 #define leftPosition 180
 #define frontPosition 100
 #define motorGradientDelayms 20
+
+#define directionForwardMargin 1.5
+#define directionLRMargin 1.0
 
 
 #include <Servo.h>
@@ -51,13 +54,13 @@ namespace control
     enum motorAction
     {
         STOPPED,
+        LEFT,
+        MEDIUMLEFT,
+        SLIGHTLEFT,
         FORWARD,
         SLIGHTRIGHT,
-        SLIGHTLEFT,
         MEDIUMRIGHT,
-        MEDIUMLEFT,
-        RIGHT,
-        LEFT
+        RIGHT
     };
 
     void toggle_led(bool* ledState) {
@@ -214,11 +217,26 @@ namespace control
         }
     }
 
+    void detectMovement(int array[], int arraySize)
+    {
+        float result = 0;
+        for(int i = 0; i < arraySize; i++)
+        {
+            result += array[i];
+        }
+
+        result /= arraySize;
+
+        if(result < motorAction::FORWARD + directionForwardMargin && result > motorAction::FORWARD - directionForwardMargin) Serial.println("I probably went forward");
+        else if(result < motorAction::LEFT + directionLRMargin) Serial.println("I probably just turned left");
+        else if(result > motorAction::RIGHT - directionLRMargin) Serial.println("I probably just turned right");
+    }
+
     void followRight(int interval)
     {
-        const int lastMesureSize = 40;
-        int lastRightMesures[lastMesureSize];
-        int mesureRightIndex = 0;
+        const int lastActionsSize = 20;
+        int lastRightActions[lastActionsSize];
+        int actionRightIndex = 0;
 
         servoMotor.write(frontPosition);
         delay(500);
@@ -248,10 +266,10 @@ namespace control
 
         while(time + interval > millis())
         {
-            long myTime = millis();
             distanceFront = getDistanceF();
             distanceRight = getDistanceR();            
 
+            long myTime = millis();
             //Serial.println(distanceRight);
 
             mesureR2 = getDistanceR();
@@ -306,27 +324,32 @@ namespace control
             }
 
             if(ledTimer + 500 < millis())
-            {
+            { 
                 toggle_led(&ledState);
                 ledTimer = millis();
             }
-
-            if(!(mesureRightIndex < lastMesureSize )
-
-            if(mesureRightIndex < lastMesureSize)
+            
+            if(!(actionRightIndex < lastActionsSize))
             {
-                lastRightMesures[mesureRightIndex] = action;
-                mesureRightIndex++;
+                shiftArray(lastRightActions, lastActionsSize);
+                lastRightActions[lastActionsSize - 1] = action;
             }
             else
             {
-                shiftArray(lastRightMesures, lastMesureSize);
-                lastRightMesures[lastMesureSize - 1] = action;
+                lastRightActions[actionRightIndex] = action;
+                actionRightIndex++;
             }
 
             takeAction(&action, &lmotorSpeed, &rmotorSpeed, (mesureR2 - mesureR1));
+            detectMovement(lastRightActions, lastActionsSize);
 
             mesureR1 = getDistanceR();
+
+            // we are getting ~13ms of loop time with Serial comm
+            /*
+            Serial.print("One loop took ");
+            Serial.println(millis() - myTime);
+            */
         }
         
         action = motorAction::STOPPED;
@@ -390,7 +413,6 @@ namespace control
                     lookingFront = false;
                 }
                 
-                if(distanceFront )
             }
 
             if(!lookingFront) {
