@@ -7,7 +7,7 @@
 #define motorMediumForwardR 85
 #define motorMediumBackwardL 84
 #define motorMediumBackwardR 96
-#define motorSlowForwardL 92
+#define motorSlowForwardL 93
 #define motorSlowBackwardL 87
 #define motorSlowForwardR 88
 #define motorSlowBackwardR 93
@@ -19,9 +19,9 @@
 #define motorGradientBigStep 2
 
 #define keepDistanceFront 4.7
-#define keepDistanceR 5.2
+#define keepDistanceR 5.0
 #define keepDistanceL 5.2
-#define margin 0.3
+#define margin 0.25
 #define deltaMargin 0.25
 #define bigTurnMargin 4.0
 #define mediumTurnMargin 2.0
@@ -161,15 +161,14 @@ namespace control
                 break;
 
             case motorAction::MEDIUMLEFT:
-                wantedLSpeed = motorMediumForwardL;
+                wantedLSpeed = motorSlowForwardL;
                 wantedRSpeed = motorForwardR;
                 break;
 
             case motorAction::MEDIUMRIGHT:
                 wantedLSpeed = motorForwardL;
-                wantedRSpeed = motorMediumForwardR;
+                wantedRSpeed = motorSlowForwardR;
                 break;
-
 
             case motorAction::LEFT:
                 wantedLSpeed = motorMediumBackwardL;
@@ -218,7 +217,7 @@ namespace control
     }
 
     void detectMovement(int array[], int arraySize)
-    {
+    {   
         float result = 0;
         for(int i = 0; i < arraySize; i++)
         {
@@ -232,12 +231,8 @@ namespace control
         else if(result > motorAction::RIGHT - directionLRMargin) Serial.println("I probably just turned right");
     }
 
-    void followRight(int interval)
+    void followRight(int interval, int lastRightActions[], int lastActionsSize, int* actionRightIndex)
     {
-        const int lastActionsSize = 20;
-        int lastRightActions[lastActionsSize];
-        int actionRightIndex = 0;
-
         servoMotor.write(frontPosition);
         delay(500);
 
@@ -276,12 +271,12 @@ namespace control
 
             if(distanceRight < keepDistanceR - margin - bigTurnMargin)
             {
-                action = motorAction::LEFT;
+                action = motorAction::MEDIUMLEFT;
                 //Serial.println("\n Setting action to left\n");
             }
             else if (distanceRight > keepDistanceR + margin + bigTurnMargin)
             {
-                action = motorAction::RIGHT;
+                action = motorAction::MEDIUMRIGHT;
                 //Serial.println("\n Setting action to right\n");
             }
             else if (distanceRight < keepDistanceR - margin - mediumTurnMargin)
@@ -329,15 +324,15 @@ namespace control
                 ledTimer = millis();
             }
             
-            if(!(actionRightIndex < lastActionsSize))
+            if(!(*actionRightIndex < lastActionsSize))
             {
                 shiftArray(lastRightActions, lastActionsSize);
                 lastRightActions[lastActionsSize - 1] = action;
             }
             else
             {
-                lastRightActions[actionRightIndex] = action;
-                actionRightIndex++;
+                lastRightActions[*actionRightIndex] = action;
+                *actionRightIndex++;
             }
 
             takeAction(&action, &lmotorSpeed, &rmotorSpeed, (mesureR2 - mesureR1));
@@ -359,11 +354,12 @@ namespace control
         while(lmotorSpeed != motorStopL || rmotorSpeed != motorStopR)
         {   
             takeAction(&action, &lmotorSpeed, &rmotorSpeed, 0);
+            delay(20);
         }
     }
 
     //In progress
-    void followLeft(int interval)
+    void followLeft(int interval, int lastRightActions[], int lastActionsSize, int* actionRightIndex)
     {
         Serial.println("Following left");
         servoMotor.write(frontPosition);
@@ -399,26 +395,9 @@ namespace control
 
         while(time + interval > millis())
         {
-            long myTime = millis();
-            if(needToCheckFront) {
-                if(!lookingFront) {
-                    servoMotor.write(frontPosition);
-                    lookingFront = true;
-                }
-                
-                if(millis() - frontTimer >= 500) {
-                    distanceFront = getDistanceF();
-                    servoMotor.write(leftPosition);
-                } else if(millis() - frontTimer - 500 >= 500) {
-                    lookingFront = false;
-                }
-                
-            }
+            long myTime = millis();  
 
-            if(!lookingFront) {
-                distanceLeft = getDistanceL();
-            }
-            
+            distanceLeft = getDistanceL();          
 
             //Serial.println(distanceRight);
 
@@ -426,19 +405,18 @@ namespace control
 
             if(distanceLeft < keepDistanceL - margin - bigTurnMargin)
             {
-                action = motorAction::RIGHT;
+                action = motorAction::MEDIUMRIGHT;
                 //Serial.println("\n Setting action to left\n");
             }
             else if (distanceLeft > keepDistanceL + margin + bigTurnMargin)
             {
-                action = motorAction::LEFT;
+                action = motorAction::MEDIUMLEFT;
                 //Serial.println("\n Setting action to right\n");
             }
             else if (distanceLeft < keepDistanceL - margin - mediumTurnMargin)
             {
                 action = motorAction::MEDIUMRIGHT;
-            // Serial.println("\n Setting action to mediumLeft\n");
-
+                //Serial.println("\n Setting action to mediumLeft\n");
             }
             else if (distanceLeft > keepDistanceL + margin + mediumTurnMargin)
             {
@@ -461,20 +439,6 @@ namespace control
                 //Serial.println("\n Setting action to forward\n");
             }
 
-            if(distanceFront < keepDistanceFront)
-            {
-                rightTriggered = true;
-                rightTriggeredTimer = millis();
-                
-                //Serial.println("\n Setting action to Left\n");
-            }
-
-            if(rightTriggered)
-            {
-                action = motorAction::RIGHT;
-                if(rightTriggeredTimer + rightTriggerTimemillis < millis()) rightTriggered = false;
-            }
-
             if(ledTimer + 500 < millis())
             {
                 toggle_led(&ledState);
@@ -489,11 +453,12 @@ namespace control
         
         action = motorAction::STOPPED;
 
-        servoMotor.write(leftPosition);
+        //servoMotor.write(leftPosition);
 
         while(lmotorSpeed != motorStopL || rmotorSpeed != motorStopR)
         {   
             takeAction(&action, &lmotorSpeed, &rmotorSpeed, 0);
+            delay(20);
         }
     }
 

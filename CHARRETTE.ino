@@ -94,7 +94,52 @@ void checkPhysicalInput()
 {
   if(digitalRead(UP_BUTTON)); //goStraight(30000);
   if(digitalRead(LEFT_BUTTON)) control::followLeft(30000);
-  if(digitalRead(RIGHT_BUTTON)) control::followRight(30000);
+  if(digitalRead(RIGHT_BUTTON)) escape();
+}
+
+void programmedEscape()
+{
+
+}
+
+void escape()
+{
+  int movement = 0;
+  int lastMovement = movement;
+
+  const int firstStep = 3000;
+  const int secondStep = 4000;
+  const int thirdStep = 4000;
+  const int forthStep = 10000;
+
+  const int actionTimer = 150;
+
+  long time = millis();
+
+  const int lastActionsSize = 20;
+  int lastRightActions[lastActionsSize];
+  int actionRightIndex = 0;
+
+  while(time + firstStep > millis())
+  {
+    control::followLeft(actionTimer, lastRightActions, lastActionsSize, &actionRightIndex);
+  }
+  time = millis();
+  while(time + secondStep > millis())
+  {
+    control::followRight(actionTimer, lastRightActions, lastActionsSize, &actionRightIndex);
+  }
+  time = millis();
+  while(time + thirdStep > millis())
+  {
+    control::followLeft(actionTimer, lastRightActions, lastActionsSize, &actionRightIndex);
+  }
+  time = millis();
+  while(time + forthStep > millis())
+  {
+    control::followRight(actionTimer, lastRightActions, lastActionsSize, &actionRightIndex);
+  }
+
 }
 
 
