@@ -103,9 +103,9 @@ void escape()
   int movement = 0;
   int lastMovement = movement;
 
-  const int firstStep = 2000;
-  const int secondStep = 4000;
-  const int thirdStep = 2000;
+  const int firstStep = 2300;
+  const int secondStep = 3500;
+  const int thirdStep = 3000;
   const int forthStep = 10000;
   int servoPosition = leftPosition;
 

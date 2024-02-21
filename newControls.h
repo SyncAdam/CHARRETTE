@@ -29,8 +29,8 @@
 
 #define LED 6
 
-#define leftTriggerTimemillis 500
-#define rightTriggerTimemillis 500
+#define leftTriggerTimemillis 350
+#define rightTriggerTimemillis 350
 
 #define nMesureDistance 3
 
@@ -64,12 +64,19 @@ namespace control
         RIGHT
     };
 
+    /**
+     * Toggle the robots led on or off
+     * @param ledState is a boolean pointer parameter pointing to the ledState variable
+    */
     void toggle_led(bool* ledState) {
         *ledState = !*ledState;
         digitalWrite(LED, *ledState);
     }
 
-    //distance to the left
+    /**
+     * Mesure the distance to the left
+     * @return The distance to the left in cm-s as a float.
+    */
     float getDistanceL()
     {
         //take 'nMesureDistance' number of mesures and send their arithmetic mean
@@ -91,6 +98,10 @@ namespace control
         
     }
     
+    /**
+     * Mesure the distance to the right
+     * @return The distance to the right in cm-s as a float.
+    */
     float getDistanceR()
     {
         //take 'nMesureDistance' number of mesures and send their arithmetic mean
@@ -111,7 +122,10 @@ namespace control
 
     }
 
-    //distance to the front
+    /**
+     * Mesure the distance to the front if the sensor is in position
+     * @return The distance to the front in cm-s as a float.
+    */
     float getDistanceF()
     {
         //take 'nMesureDistance' number of mesures and send their arithmetic mean
@@ -132,7 +146,11 @@ namespace control
     }
 
     /**
-    * 
+    * This function reacts to the action that the robot wants to take by incrementing the motors speed to the desired speed step by step.
+    * @param action int pointer to the action that the robot want to take. This doesnt need to be a pointer since we donc actually change the value.
+    * @param lmotorSpeed int pointer to the left motors current speed that is taken in account to calculate the new value that will be written to the motor
+    * @param rmotorSpeed int pointer to the right motors current speed that is taken in account to calculate the new value that will be written to the motor
+    * @param deltaD float value that is the difference between two mesures, so we can see at what speed we approach the wall.
     */
     void takeAction(int* action, int* lmotorSpeed, int* rmotorSpeed, float deltaD)
     {
@@ -193,6 +211,7 @@ namespace control
 
         }
 
+        //write the changes to the motors
         if(*lmotorSpeed < wantedLSpeed) newlmotorSpeed = *lmotorSpeed + motorGradientStep;
         else if(*lmotorSpeed > wantedLSpeed) newlmotorSpeed = *lmotorSpeed - motorGradientStep;
         if(*rmotorSpeed > wantedRSpeed) newrmotorSpeed = *rmotorSpeed - motorGradientStep;
@@ -208,7 +227,11 @@ namespace control
 
     }
 
-    //arrays are pointers
+    /**
+     * Shift the values in array by one to the left
+     * @param array Array that is to be shifted
+     * @param arraSize int value that represents the size of the array
+    */
     void shiftArray(int array[], int arraySize)
     {
         for(int i = 1; i < arraySize; i++)
@@ -217,6 +240,12 @@ namespace control
         }
     }
 
+    /**
+     * This function detects if a movement was made (for example turning right or left)
+     * This may be used to make field programmable solving by detecting when a turn was made and deciding which wall to follow (wall to the left or to the right)
+     * @param array Array that holds the values of the last mesures
+     * @param arraySize int value that represents the arrays size
+    */
     void detectMovement(int array[], int arraySize)
     {   
         float result = 0;
@@ -232,6 +261,13 @@ namespace control
         else if(result > motorAction::RIGHT - directionLRMargin) Serial.println("I probably just turned right");
     }
 
+    /**
+     * This function makes the robot follow the right wall for *interval* amount of milliseconds
+     * @param interval int value for the amount of time the robot will follow the right wall for in milliseconds
+     * @param servoPosition int pointer for the servo motors position variable
+     * @param lmotorSpeed int pointer to the left motors speed variable 
+     * @param rmotorSpeed int pointer to the right motors speed variable 
+    */
     void followRight(int interval, int *servoPosition, int* lmotorSpeed, int* rmotorSpeed/*, int lastRightActions[], int lastActionsSize, int* actionRightIndex*/)
     {
 
@@ -330,7 +366,7 @@ namespace control
                 //Serial.println("\n Setting action to forward\n");
             }
 
-            if(distanceFront < keepDistanceFront)
+            if(distanceFront < keepDistanceFront && !leftTriggered)
             {
                 leftTriggered = true;
                 leftTriggeredTimer = millis();
