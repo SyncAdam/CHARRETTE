@@ -18,10 +18,19 @@
 
 #include "newControls.h"
 
+/**
+ * Unimplemented idea:
+ * We wanted to make the robot detect corners, and the idea was that the robot is "pre-programmable" such that detecting
+ * a corner would make it either follow the left or the right wall, based on how it was programmed. This would in most 
+ * scenarios work, if there are walls around all the time, but would possibly fail if the robot started in a box where
+ * no wall are in the vicinity.  
+*/
+
 const int limitNoWall = 13; // If a sensor detects something further than "limitNoWall" cm away, it means there's a door
 
 //const int directions[] = ''
 
+//ew global variables
 long distanceReadUpdate;
 long ledupdate;
 
@@ -85,11 +94,17 @@ void setup() {
   launched = true;
 }
 
+/**
+ * This function toggles the LED on or off
+*/
 void toggle_led() {
   ledState = !ledState;
   digitalWrite(LED, ledState);
 }
 
+/**
+ * This function checks the inputs of the buttons situated on the robot
+*/
 void checkPhysicalInput()
 {
   int position = leftPosition;
@@ -98,6 +113,9 @@ void checkPhysicalInput()
   if(digitalRead(RIGHT_BUTTON)) escape();
 }
 
+/**
+ * This function will likely make the robot escape the labyrinth, if the technology gods approve
+*/
 void escape()
 {
   int movement = 0;
