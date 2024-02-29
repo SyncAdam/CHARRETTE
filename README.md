@@ -1,3 +1,3 @@
-#Projet CHARRETTE
+# Projet CHARRETTE
 
-![](CHARRETTE\robot.jpg)
+![](robot.jpg)
